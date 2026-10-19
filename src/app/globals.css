@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #07090d;
+  --color-panel: #10141c;
+  --color-panel-2: #171d27;
+  --color-line: #2c3544;
+  --color-lime: #c6f135;
+  --color-muted: #93a0b5;
+  --font-sans: var(--font-outfit), "Segoe UI", sans-serif;
+  --font-mono: var(--font-ibm), Consolas, monospace;
+}
+
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(900px 420px at 8% -10%, rgba(198, 241, 53, 0.09), transparent 55%),
+    radial-gradient(700px 420px at 100% 0%, rgba(140, 170, 200, 0.07), transparent 46%),
+    var(--color-ink);
+  color: #e7edf6;
+  font-family: var(--font-outfit), "Segoe UI", sans-serif;
+}
+body::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(circle at 20% 0%, black, transparent 72%);
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: 0.48; }
+:focus-visible { outline: 2px solid var(--color-lime); outline-offset: 2px; }
+::selection { background: #c6f135; color: #142006; }
+a { color: inherit; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.rise { animation: rise .45s ease both; }
+@keyframes pulse-dot {
+  50% { opacity: .35; }
+}
+.pulse { animation: pulse-dot 1.2s ease infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

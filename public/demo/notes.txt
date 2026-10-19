@@ -1,0 +1,4 @@
+TokenForge sample notes
+
+This document is part of the local sample library.
+It is not copied from a reference website.

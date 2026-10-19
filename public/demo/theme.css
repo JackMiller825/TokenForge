@@ -1,0 +1,10 @@
+:root {
+  --forge-ink: #07090d;
+  --forge-lime: #c6f135;
+  --forge-panel: #10141c;
+}
+
+.hero {
+  background: var(--forge-panel);
+  color: var(--forge-lime);
+}

@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+.data
+*.tsbuildinfo
+.api-hidden-during-export
+.env*
+!.env.example
+*.zip
+playwright-report
+test-results
+coverage
