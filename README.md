@@ -5,8 +5,9 @@ TokenForge is the reference half of a token-website builder.
 - Module 01 downloads public files into a ZIP with stable filenames and manifest 1.0.0.
 - Module 02 analyzes an authorized page into screenshots, sections, observed design values, asset positions, and a blueprint ZIP at schema 2.0.0.
 - Phase 3, the Replacement Studio, maps uploaded artwork onto that project and exports `tokenforge-replacement-package.zip` at schema 3.0.0.
+- Phase 4, the Identity Studio, stores the token profile and exports `tokenforge-identity-package.zip` at schema 4.0.0. Phase 4 is ready for Phase 5.
 
-It does not generate a token site yet. Demo mode is sample data, not a scan.
+Phase 5, the website generator, remains a contract in `src/lib/modules.ts`. Demo mode is sample data, not a scan.
 
 The working path is **enter a URL, scan or analyze, map replacements, approve them, download the package**.
 
@@ -117,10 +118,9 @@ Job state and project files are stored in `.data/`. Screenshots are files. The p
 
 ## Later modules
 
-Phase 4 and Phase 5 have contracts in `src/lib/modules.ts` and are not built yet:
+Phase 4 is ready for Phase 5. The identity studio, schema 4.0.0 package, and readiness contract are implemented. Phase 5 and Phase 6 remain contracts in `src/lib/modules.ts`:
 
-- Module 04 — Token Identity Studio: name, ticker, network, contract, supply, taxes, liquidity, ownership, socials, copy
-- Module 05 — Website Generator: build a site from the blueprint, approved mappings, and replacement files
+- Module 05 — Website Generator: build a site from the blueprint, approved mappings, and the identity profile
 - Module 06 — Visual Comparison and Publishing: compare, check responsiveness, prepare deploy
 
 ## Scripts
@@ -162,11 +162,11 @@ Supply, taxes, liquidity, and ownership start as editing defaults. Liquidity and
 
 Section ids come from the Phase 2 blueprint. Tone presets do not overwrite writing. Empty-field suggestions are templates. Official links can be Coming Soon. The app does not invent social URLs. The brand consistency report flags stale reference names, foreign contract addresses, and unverified token claims.
 
-`tokenforge-identity-package.zip` uses schema 4.0.0 and references Phase 3 approved asset ids instead of copying image binaries. `mapping/phase5-input.json` is the generator contract. Phase 5 readiness separates hard blockers from warnings. The generator itself is not included.
+`tokenforge-identity-package.zip` uses schema 4.0.0 and references Phase 3 approved asset ids instead of copying image binaries. `mapping/phase5-input.json` is the generator contract. Phase 5 readiness separates hard blockers from warnings. A configured address is still not described as an on-chain verified contract. The generator itself is not included. Autosave keeps a newer edit when an older response returns, and it says Not saved until you retry after a network failure.
 
 ## GitHub Pages
 
-https://jackmiller825.github.io/TokenForge/ is the static frontend. It does not run Playwright. Connect it to a TokenForge server, or use Demo mode to inspect the sample blueprint. The sample is not an analysis of a live site.
+https://jackmiller825.github.io/TokenForge/ is the static frontend. Links use one `/TokenForge` prefix. The Next.js `basePath` adds it, and in-app links do not add it again. The site does not run Playwright. Connect it to a TokenForge server, or use Demo mode to inspect the sample blueprint. The sample is not an analysis of a live site. Identity export waits until the latest edit is saved. A failed save does not produce a package.
 
 ## Known limitations
 

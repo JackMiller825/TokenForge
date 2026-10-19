@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { apiUrl, authHeaders } from '@/lib/api/client';
-import { withBase } from '@/lib/format';
+import { linkHref } from '@/lib/format';
 import { useBackend } from '@/components/backend';
 import type { ReferenceProject } from '@/lib/analyze/model';
 
@@ -39,7 +39,7 @@ export default function OverviewPage() {
                 <div className="text-xs text-muted">{project.url}</div>
               </div>
               <div className="text-xs text-muted">Assets {project.assetScanStatus} · Analysis {project.analysisStatus}</div>
-              <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={withBase(`/analyze?project=${project.id}`)}>Open</Link>
+              <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={linkHref(`/analyze?project=${project.id}`)}>Open</Link>
             </li>
           ))}
         </ul>
@@ -49,5 +49,5 @@ export default function OverviewPage() {
 }
 
 function Card({ href, title, copy }: { href: string; title: string; copy: string }) {
-  return <Link href={withBase(href)} className="rounded-3xl border border-line bg-panel p-5"><div className="text-lg font-semibold">{title}</div><p className="mt-2 text-sm leading-6 text-muted">{copy}</p></Link>;
+  return <Link href={linkHref(href)} className="rounded-3xl border border-line bg-panel p-5"><div className="text-lg font-semibold">{title}</div><p className="mt-2 text-sm leading-6 text-muted">{copy}</p></Link>;
 }

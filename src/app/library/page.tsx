@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { apiUrl, authHeaders } from '@/lib/api/client';
-import { withBase } from '@/lib/format';
+import { linkHref, withBase } from '@/lib/format';
 import { DEMO_PROJECT } from '@/lib/demo/blueprint';
 import type { ReferenceProject } from '@/lib/analyze/model';
 import { useBackend } from '@/components/backend';
@@ -60,10 +60,10 @@ export default function LibraryPage() {
                 <div className="mt-2 text-xs text-muted">Assets {project.assetScanStatus} · Analysis {project.analysisStatus} · Replacements {project.replacementStatus || 'none'} · Identity {project.identityStatus || 'none'} · {project.versions.length} version{project.versions.length === 1 ? '' : 's'}</div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={withBase(project.demo ? '/analyze' : `/analyze?project=${project.id}`)}>Open</Link>
-                {!project.demo && <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={withBase(`/download?project=${project.id}`)}>Assets</Link>}
-                {!project.demo && <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={withBase(`/replace?project=${project.id}`)}>Replace</Link>}
-                {!project.demo && <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={withBase(`/identity?project=${project.id}`)}>Identity</Link>}
+                <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={linkHref(project.demo ? '/analyze' : `/analyze?project=${project.id}`)}>Open</Link>
+                {!project.demo && <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={linkHref(`/download?project=${project.id}`)}>Assets</Link>}
+                {!project.demo && <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={linkHref(`/replace?project=${project.id}`)}>Replace</Link>}
+                {!project.demo && <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={linkHref(`/identity?project=${project.id}`)}>Identity</Link>}
                 {!project.demo && <button type="button" className="rounded-lg border border-line px-3 py-2 text-sm" onClick={() => void rename(project)}>Rename</button>}
                 {!project.demo && <button type="button" className="rounded-lg border border-line px-3 py-2 text-sm" onClick={() => void rerun(project)}>Rerun analysis</button>}
                 {!project.demo && pendingDelete !== project.id && <button type="button" className="rounded-lg border border-red-900 px-3 py-2 text-sm" onClick={() => setPendingDelete(project.id)}>Delete</button>}

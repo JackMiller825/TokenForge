@@ -8,7 +8,16 @@ export function formatBytes(bytes?: number): string {
 export function withBase(path = ''): string {
   const base = process.env.NEXT_PUBLIC_BASE_PATH || '';
   if (!path) return base;
-  return `${base}${path.startsWith('/') ? path : `/${path}`}`;
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  if (!base || normalized === base || normalized.startsWith(`${base}/`)) return normalized;
+  return `${base}${normalized}`;
+}
+
+export function linkHref(path: string): string {
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  const base = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  if (base && (normalized === base || normalized.startsWith(`${base}/`))) return normalized.slice(base.length) || '/';
+  return normalized;
 }
 
 export const STATIC_EXPORT = process.env.NEXT_PUBLIC_STATIC_EXPORT === '1';

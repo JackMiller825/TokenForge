@@ -7,7 +7,7 @@ import { planPaths } from '@/lib/archive/names';
 import { downloadSampleZip, SAMPLE_SCAN } from '@/lib/demo/sample';
 import { apiUrl } from '@/lib/api/client';
 import { useBackend } from '@/components/backend';
-import { formatBytes, withBase } from '@/lib/format';
+import { formatBytes, linkHref, withBase } from '@/lib/format';
 import type { AssetRecord, Job, ScanMode, ScanResult, ZipStructure } from '@/lib/types';
 import { CATEGORIES } from '@/lib/types';
 import { DetailDrawer } from './detail-drawer';
@@ -267,8 +267,8 @@ export default function Dashboard() {
           {scan && scanJob?.projectId && !demo && (
             <div className="mt-4 flex flex-wrap gap-2">
               <span className="rounded-lg border border-line px-3 py-2 text-sm text-lime">Asset scan complete</span>
-              <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={withBase(`/analyze?project=${scanJob.projectId}`)}>Analyze website</Link>
-              <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={withBase(`/library`)}>Open project</Link>
+              <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={linkHref(`/analyze?project=${scanJob.projectId}`)}>Analyze website</Link>
+              <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={linkHref('/library')}>Open project</Link>
             </div>
           )}
           {demo && <div className="mt-4 rounded-2xl border border-sky-800 bg-sky-950/40 px-4 py-3 text-sm text-sky-100">Sample library. These files are not a scan of a website.</div>}

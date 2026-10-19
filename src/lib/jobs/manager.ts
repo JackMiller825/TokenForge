@@ -462,8 +462,6 @@ export function startIdentityExport(projectId: string): Job {
   if (!project) throw new HttpError(404, 'Unknown project');
   const identity = readIdentity(store.dir(project.id));
   if (!identity) throw new HttpError(404, 'Save an identity before exporting it');
-  const studio = readStudio(store.dir(project.id));
-  const textAssets = (studio?.uploads || []).filter((upload) => upload.containsText === 'yes').map((upload) => ({ id: upload.id, filename: upload.originalFilename }));
   const now = new Date().toISOString();
   const job: Job = {
     id: randomUUID(),
@@ -481,7 +479,10 @@ export function startIdentityExport(projectId: string): Job {
     setStatus(job, 'running');
     const zipPath = join(root(), 'exports', `${job.id}.zip`);
     try {
-      const outcome = await writeIdentityPackage(zipPath, identity, store.readAnalysis(project.id), studio, textAssets);
+      const latest = readIdentity(store.dir(project.id)) || identity;
+      const latestStudio = readStudio(store.dir(project.id));
+      const latestText = (latestStudio?.uploads || []).filter((upload) => upload.containsText === 'yes').map((upload) => ({ id: upload.id, filename: upload.originalFilename }));
+      const outcome = await writeIdentityPackage(zipPath, latest, store.readAnalysis(project.id), latestStudio, latestText);
       if (outcome.errors.length) throw new Error(outcome.errors.join(' '));
       const expiresAt = new Date(Date.now() + LIMITS.exportTtlMs).toISOString();
       job.download = { token: signExport(job.id, Date.parse(expiresAt)), expiresAt, bytes: outcome.bytes, filename: 'tokenforge-identity-package.zip' };

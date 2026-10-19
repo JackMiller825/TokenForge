@@ -6,6 +6,8 @@ import JSZip from 'jszip';
 import type { AnalysisResult, SectionRecord } from '../src/lib/analyze/model';
 import { authorize } from '../src/lib/http/guard';
 import { brandReport } from '../src/lib/identity/consistency';
+import { applyConfirmedSave, identityFingerprint, shouldExport } from '../src/lib/identity/persist';
+import { contractLabel } from '../src/lib/identity/preview';
 import { compareIdentity, normalizeIdentity, setTone } from '../src/lib/identity/document';
 import { openIdentity, saveIdentity, writeRevision } from '../src/lib/identity/disk';
 import { writeIdentityPackage } from '../src/lib/identity/export';
@@ -192,6 +194,73 @@ describe('brand report, readiness, and export', () => {
     const input = JSON.parse(await zip.file('mapping/phase5-input.json')!.async('string'));
     expect(input.identity.token.ticker).toBe('CAT');
     expect(await zip.file('README.md')!.async('string')).toMatch(/Coming Soon/);
+  });
+});
+
+describe('save confirmation and package import', () => {
+  it('keeps a newer edit when an older save response returns and refuses export without a save', () => {
+    const local = emptyIdentity('project');
+    local.token.name = 'Second';
+    local.token.ticker = 'TWO';
+    local.updatedAt = 'T0';
+    const sent = emptyIdentity('project');
+    sent.token.name = 'First';
+    sent.token.ticker = 'ONE';
+    sent.updatedAt = 'T0';
+    const confirmed = { ...sent, updatedAt: 'T1', revisions: [{ id: 'rev-1', at: 'T1', label: 'Autosave' }] };
+    const merged = applyConfirmedSave(local, confirmed);
+    expect(merged.token.name).toBe('Second');
+    expect(merged.token.ticker).toBe('TWO');
+    expect(merged.updatedAt).toBe('T1');
+    expect(identityFingerprint(merged)).toBe(identityFingerprint(local));
+    expect(shouldExport(null)).toBe(false);
+    expect(shouldExport(merged)).toBe(true);
+  });
+
+  it('does not describe a configured address as an on-chain verified contract', () => {
+    const doc = emptyIdentity('project');
+    doc.token.networkId = 'ethereum';
+    doc.token.contractStatus = 'configured';
+    doc.token.contractAddress = '0x1234567890abcdef1234567890abcdef12345678';
+    expect(addressValid('ethereum', doc.token.contractAddress)).toBe(true);
+    expect(contractLabel(doc)).toMatch(/does not call the contract deployed/);
+    expect(contractLabel(doc).toLowerCase()).not.toMatch(/on-chain verified|verified on-chain/);
+  });
+
+  it('imports an exported profile into a fresh project', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'tokenforge-identity-import-'));
+    const store = new ProjectStore(root, 'json');
+    const source = store.create({ name: 'Reference', url: 'https://example.com/source' });
+    const opened = openIdentity(store, source.id)!;
+    const section = { id: 'section-hero', sourceSectionId: 'section-hero', order: 0, hidden: false, displayName: 'Hero', purpose: 'hero', headline: 'New Cat arrives', subheadline: '', description: '', body: '<p>Hello</p>', mobileCopy: 'Mobile line', primaryButton: 'Enter', secondaryButton: '', buttonDestination: '', assetIds: ['asset-1'], backgroundAssetId: '', notes: '', duplicated: false };
+    const saved = saveIdentity(store, source.id, {
+      ...opened.identity,
+      token: { ...opened.identity.token, name: 'New Cat', ticker: 'CaT' },
+      narrative: { ...opened.identity.narrative, origin: '<p>Custom origin</p>' },
+      sections: [section],
+      links: [{ id: 'site', type: 'website', label: 'Website', url: '', enabled: true, status: 'coming-soon', locations: ['footer'], icon: '' }],
+    })!;
+    const zipPath = join(root, 'tokenforge-identity-package.zip');
+    const outcome = await writeIdentityPackage(zipPath, saved.identity, null, null, []);
+    expect(outcome.errors).toEqual([]);
+    const zip = await JSZip.loadAsync(readFileSync(zipPath));
+    const token = JSON.parse(await zip.file('identity/token.json')!.async('string'));
+    const narrative = JSON.parse(await zip.file('identity/narrative.json')!.async('string'));
+    const sections = JSON.parse(await zip.file('identity/sections.json')!.async('string'));
+    const links = JSON.parse(await zip.file('identity/links.json')!.async('string'));
+    expect(token.ticker).toBe('CaT');
+    const target = store.create({ name: 'Fresh', url: 'https://example.com/fresh' });
+    const fresh = openIdentity(store, target.id)!;
+    const imported = normalizeIdentity({ ...saved.identity, token, narrative, sections, links });
+    const stored = saveIdentity(store, target.id, { ...imported, projectId: target.id, revisions: fresh.identity.revisions, referenceTitle: fresh.identity.referenceTitle, referenceUrl: fresh.identity.referenceUrl });
+    expect(stored?.identity.token.name).toBe('New Cat');
+    expect(stored?.identity.token.ticker).toBe('CaT');
+    expect(stored?.identity.sections[0]?.headline).toBe('New Cat arrives');
+    expect(stored?.identity.sections[0]?.assetIds).toEqual(['asset-1']);
+    expect(stored?.identity.links[0]?.status).toBe('coming-soon');
+    expect(stored?.identity.narrative.origin).toContain('Custom origin');
+    expect(stored?.identity.referenceUrl).toBe('https://example.com/fresh');
+    expect(stored?.identity.referenceTitle).toBe(fresh.identity.referenceTitle);
   });
 });
 

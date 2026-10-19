@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiUrl, authHeaders } from '@/lib/api/client';
-import { withBase } from '@/lib/format';
+import { linkHref } from '@/lib/format';
+import { applyConfirmedSave, identityFingerprint, shouldExport } from '@/lib/identity/persist';
 import type { ConsistencyCheck } from '@/lib/identity/consistency';
 import type { IdentityDocument, LinkLocation, LinkType, OfficialLink, SectionCopy, Tone } from '@/lib/identity/model';
 import { LINK_TYPES, NETWORKS, TONES } from '@/lib/identity/model';
@@ -56,7 +57,7 @@ export function IdentityStudio({ projectId }: { projectId: string }) {
   const [compare, setCompare] = useState<{ before: IdentityDocument; after: IdentityDocument } | null>(null);
   const docRef = useRef<IdentityDocument | null>(null);
   const skip = useRef(true);
-  const requestSeq = useRef(0);
+  const chain = useRef(Promise.resolve());
   const tabs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   useEffect(() => { docRef.current = doc; }, [doc]);
@@ -73,7 +74,7 @@ export function IdentityStudio({ projectId }: { projectId: string }) {
           return;
         }
         applyPayload(body as IdentityPayload, true);
-        setNotice('Saved on this project.');
+        setNotice('Loaded from this project.');
       })
       .catch(() => {
         if (!cancelled) setError('The identity profile could not be opened.');
@@ -88,42 +89,72 @@ export function IdentityStudio({ projectId }: { projectId: string }) {
       skip.current = false;
       return;
     }
-    const timer = window.setTimeout(() => { void send('save', { document: docRef.current }); }, 800);
+    const timer = window.setTimeout(() => { void enqueue(() => writeCurrent()); }, 800);
     return () => window.clearTimeout(timer);
   }, [fingerprint]);
 
   function applyPayload(body: IdentityPayload, replaceDocument: boolean) {
-    if (replaceDocument) {
+    if (replaceDocument && body.identity) {
       skip.current = true;
+      docRef.current = body.identity;
       setDoc(body.identity);
+    } else if (body.identity && docRef.current) {
+      const next = applyConfirmedSave(docRef.current, body.identity);
+      docRef.current = next;
+      setDoc(next);
     } else if (body.identity) {
-      setDoc((current) => current ? { ...current, updatedAt: body.identity.updatedAt, revisions: body.identity.revisions } : body.identity);
+      docRef.current = body.identity;
+      setDoc(body.identity);
     }
     setReport(body.report || []);
     setReadiness(body.readiness);
     setAssets(body.approvedAssets || []);
     setDesign(body.design);
-    if (!sectionId && body.identity.sections[0]) setSectionId(body.identity.sections[0].id);
+    if (!sectionId && body.identity?.sections[0]) setSectionId(body.identity.sections[0].id);
   }
 
-  async function send(action: string, extra: Record<string, unknown> = {}, replaceDocument = action !== 'save') {
-    const seq = ++requestSeq.current;
-    const response = await fetch(apiUrl(`/api/projects/${projectId}/identity`), {
-      method: 'PATCH',
-      headers: authHeaders(true),
-      body: JSON.stringify({ action, ...extra }),
-    });
-    const body = await response.json();
-    if (seq !== requestSeq.current) return null;
-    if (!response.ok) {
-      setError(body.error || 'The identity update failed.');
-      setNotice('');
+  function enqueue<T>(task: () => Promise<T>): Promise<T> {
+    const run = chain.current.then(task, task);
+    chain.current = run.then(() => undefined, () => undefined);
+    return run;
+  }
+
+  async function postIdentity(extra: Record<string, unknown>, replaceDocument: boolean) {
+    setNotice('Saving…');
+    try {
+      const response = await fetch(apiUrl(`/api/projects/${projectId}/identity`), {
+        method: 'PATCH',
+        headers: authHeaders(true),
+        body: JSON.stringify(extra),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok || !body?.identity) {
+        setError(body?.error || 'The edit was not saved.');
+        setNotice('Not saved.');
+        return null;
+      }
+      applyPayload(body as IdentityPayload, replaceDocument);
+      setError('');
+      setNotice('Saved.');
+      return body as IdentityPayload;
+    } catch {
+      setError('The server could not be reached. This edit is not saved yet.');
+      setNotice('Not saved.');
       return null;
     }
-    setError('');
-    applyPayload(body as IdentityPayload, replaceDocument);
-    setNotice(action === 'save' ? 'Autosaved.' : 'Saved.');
-    return body as IdentityPayload;
+  }
+
+  async function writeCurrent() {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const snapshot = docRef.current;
+      if (!snapshot) return null;
+      const saved = await postIdentity({ action: 'save', document: snapshot }, false);
+      if (!saved) return null;
+      if (docRef.current && identityFingerprint(docRef.current) === identityFingerprint(snapshot)) return saved;
+    }
+    setError('Edits are still arriving. Wait a moment, then retry the save.');
+    setNotice('Not saved.');
+    return null;
   }
 
   function update(recipe: (current: IdentityDocument) => IdentityDocument) {
@@ -141,37 +172,57 @@ export function IdentityStudio({ projectId }: { projectId: string }) {
   }
 
   async function commitThen(action: string, extra: Record<string, unknown> = {}) {
-    const saved = await send('save', { document: docRef.current }, false);
-    if (!saved) return null;
-    return send(action, extra, true);
+    return enqueue(async () => {
+      const saved = await writeCurrent();
+      if (!shouldExport(saved?.identity ?? null)) return null;
+      return postIdentity({ action, ...extra }, true);
+    });
   }
 
   async function saveRevision() {
-    if (!doc) return;
-    await send('revision', { document: doc, label: 'Manual save' }, true);
+    await enqueue(async () => {
+      const saved = await writeCurrent();
+      if (!saved) return null;
+      return postIdentity({ action: 'revision', document: docRef.current, label: 'Manual save' }, true);
+    });
   }
 
   async function exportZip() {
-    setNotice('Packing the identity profile.');
-    const response = await fetch(apiUrl(`/api/projects/${projectId}/identity/export`), { method: 'POST', headers: authHeaders(true) });
-    const created = await response.json();
-    if (!response.ok) {
-      setError(created.error || 'Export failed.');
+    const saved = await enqueue(() => writeCurrent());
+    if (!shouldExport(saved?.identity ?? null)) {
+      setError((current) => current || 'Export stopped because the latest edit was not saved.');
+      setNotice('Not saved.');
       return;
     }
-    for (let attempt = 0; attempt < 20; attempt += 1) {
-      const jobResponse = await fetch(apiUrl(`/api/jobs/${created.jobId}`), { headers: authHeaders() });
-      const job = await jobResponse.json();
-      if (job.status === 'completed' && job.download) {
-        window.location.href = apiUrl(`/api/exports/${job.download.token}`);
-        setNotice('Identity package ready.');
+    setNotice('Packing the saved identity profile.');
+    try {
+      const response = await fetch(apiUrl(`/api/projects/${projectId}/identity/export`), { method: 'POST', headers: authHeaders(true) });
+      const created = await response.json();
+      if (!response.ok) {
+        setError(created.error || 'Export failed.');
+        setNotice('Saved. The package was not created.');
         return;
       }
-      if (job.status === 'failed') {
-        setError(job.error || 'Export failed.');
-        return;
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        const jobResponse = await fetch(apiUrl(`/api/jobs/${created.jobId}`), { headers: authHeaders() });
+        const job = await jobResponse.json();
+        if (job.status === 'completed' && job.download) {
+          window.location.href = apiUrl(`/api/exports/${job.download.token}`);
+          setNotice('Identity package ready.');
+          return;
+        }
+        if (job.status === 'failed') {
+          setError(job.error || 'Export failed.');
+          setNotice('Saved. The package was not created.');
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 400));
       }
-      await new Promise((resolve) => setTimeout(resolve, 400));
+      setError('The export did not finish. The profile is saved.');
+      setNotice('Saved. The package was not created.');
+    } catch {
+      setError('The export did not reach the server. The profile is saved.');
+      setNotice('Saved. The package was not created.');
     }
   }
 
@@ -200,7 +251,7 @@ export function IdentityStudio({ projectId }: { projectId: string }) {
       setError('That file is not valid JSON.');
       return;
     }
-    await send('import', { document: parsed }, true);
+    await enqueue(() => postIdentity({ action: 'import', document: parsed }, true));
   }
 
   if (!doc) {
@@ -225,11 +276,11 @@ export function IdentityStudio({ projectId }: { projectId: string }) {
           <button type="button" className="rounded-lg border border-line px-3 py-2 text-sm" onClick={() => void commitThen('suggest')}>Fill empty fields</button>
           <button type="button" className="rounded-lg border border-line px-3 py-2 text-sm" onClick={downloadJson}>Download JSON</button>
           <label className="rounded-lg border border-line px-3 py-2 text-sm">Import JSON<input className="sr-only" type="file" accept="application/json" aria-label="Import identity JSON" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importJson(file); }} /></label>
-          <button type="button" className="rounded-lg border border-line px-3 py-2 text-sm" onClick={() => void send('save', { document: docRef.current }, false).then(() => exportZip())}>Export package</button>
+          <button type="button" className="rounded-lg border border-line px-3 py-2 text-sm" onClick={() => void exportZip()}>Export package</button>
         </div>
       </div>
       <p className="mt-3 text-sm text-muted" aria-live="polite">{notice}{readiness ? ` · ${readiness.ready ? 'Phase 5 has no hard blockers.' : `${readiness.blockers.length} blocker${readiness.blockers.length === 1 ? '' : 's'}.`}` : ''}</p>
-      {error && <div role="alert" className="mt-3 rounded-2xl border border-red-900 bg-red-950/40 px-4 py-3 text-sm">{error}</div>}
+      {error && <div role="alert" className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-900 bg-red-950/40 px-4 py-3 text-sm"><span>{error}</span><button type="button" className="rounded-lg border border-red-800 px-3 py-1" onClick={() => void enqueue(() => writeCurrent())}>Retry save</button></div>}
       <div className="mt-4 flex gap-1 overflow-x-auto" role="tablist" aria-label="Identity studio" onKeyDown={onTabKey}>
         {TABS.map(([id, label]) => (
           <button key={id} type="button" role="tab" id={`tab-${id}`} aria-selected={tab === id} aria-controls={`panel-${id}`} ref={(node) => { tabs.current[id] = node; }} className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm ${tab === id ? 'bg-lime text-ink' : 'border border-line text-muted'}`} onClick={() => setTab(id)}>{label}</button>
@@ -264,13 +315,13 @@ export function IdentityStudio({ projectId }: { projectId: string }) {
         {tab === 'links' && <LinkFields doc={doc} update={update} />}
         {tab === 'seo' && <SeoFields doc={doc} assets={assets} update={update} />}
         {tab === 'preview' && <Preview doc={doc} design={design} assets={assets} viewport={viewport} onViewport={setViewport} />}
-        {tab === 'report' && <Report doc={doc} report={report} readiness={readiness} onException={(word) => void commitThen('exception', { word })} onRestore={(revisionId) => void send('restore', { revisionId }, true)} onCompare={async (revisionId) => {
+        {tab === 'report' && <Report doc={doc} report={report} readiness={readiness} onException={(word) => void commitThen('exception', { word })} onRestore={(revisionId) => void enqueue(() => postIdentity({ action: 'restore', revisionId }, true))} onCompare={async (revisionId) => {
           const response = await fetch(apiUrl(`/api/projects/${projectId}/identity?revision=${revisionId}`), { headers: authHeaders() });
           const body = await response.json();
           if (body.revision && doc) setCompare({ before: body.revision as IdentityDocument, after: doc });
         }} compare={compare} />}
       </div>
-      <p className="mt-6 text-sm text-muted"><Link className="text-lime" href={withBase(`/replace?project=${projectId}`)}>Approved artwork lives in Replacement Studio.</Link> Identity edits do not change those files.</p>
+      <p className="mt-6 text-sm text-muted"><Link className="text-lime" href={linkHref(`/replace?project=${projectId}`)}>Approved artwork lives in Replacement Studio.</Link> Identity edits do not change those files.</p>
     </div>
   );
 }

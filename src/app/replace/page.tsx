@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useBackend } from '@/components/backend';
 import { StudioWorkspace } from '@/components/studio';
-import { withBase } from '@/lib/format';
+import { linkHref } from '@/lib/format';
 
 function StudioPage() {
   const backend = useBackend();
@@ -23,7 +23,7 @@ function StudioPage() {
           <div className="text-xs font-semibold uppercase tracking-[0.22em] text-lime">Asset replacement studio</div>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight">Map new artwork onto a reference project.</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">Open a project from the library. Uploaded files, fitted variants, and the original scan stay in separate folders.</p>
-          <Link className="mt-5 inline-block rounded-lg bg-lime px-4 py-2 text-sm font-semibold text-ink" href={withBase('/library')}>Open the library</Link>
+          <Link className="mt-5 inline-block rounded-lg bg-lime px-4 py-2 text-sm font-semibold text-ink" href={linkHref('/library')}>Open the library</Link>
         </div>
       )}
       {projectId && backend.state === 'connected' && <StudioWorkspace projectId={projectId} />}

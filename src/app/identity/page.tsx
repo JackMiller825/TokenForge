@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useBackend } from '@/components/backend';
 import { IdentityStudio } from '@/components/identity-studio';
-import { withBase } from '@/lib/format';
+import { linkHref } from '@/lib/format';
 
 function IdentityPage() {
   const backend = useBackend();
@@ -23,7 +23,7 @@ function IdentityPage() {
           <div className="text-xs font-semibold uppercase tracking-[0.22em] text-lime">Identity studio</div>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight">Give a reference project a new token identity.</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">Open a project from the library. The reference name, blueprint, and approved artwork stay where they are. The new identity is stored beside them.</p>
-          <Link className="mt-5 inline-block rounded-lg bg-lime px-4 py-2 text-sm font-semibold text-ink" href={withBase('/library')}>Open the library</Link>
+          <Link className="mt-5 inline-block rounded-lg bg-lime px-4 py-2 text-sm font-semibold text-ink" href={linkHref('/library')}>Open the library</Link>
         </div>
       )}
       {projectId && backend.state === 'connected' && <IdentityStudio projectId={projectId} />}

@@ -17,6 +17,8 @@ describe('documentation coverage', () => {
       expect(text).toMatch(/tokenforge-identity-package\.zip/);
       expect(text).toMatch(/Coming Soon|coming-soon/);
       expect(text).toMatch(/brand consistency|Brand consistency/i);
+      expect(text).toMatch(/Not saved/);
+      expect(text).toMatch(/not added by hand|do not add it again/);
       expect(text).toMatch(/Demo mode/);
       expect(text).toMatch(/Known limitations/);
     }
