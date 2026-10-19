@@ -15,17 +15,21 @@ export interface WebsiteAnalyzerHandoff {
 }
 
 export interface AssetReplacementHandoff {
-  mappings: { assetId: string; replacementPath: string }[];
+  schemaVersion?: '3.0.0';
+  mappings: { assetId: string; replacementPath: string; derivedPath?: string; state?: string; role?: string }[];
+  readiness?: 'draft' | 'ready';
 }
 
 export interface TokenIdentity {
   name: string;
   ticker: string;
   chain: string;
+  network: string;
   contractAddress: string;
   supply: string;
   taxes: { buy?: string; sell?: string };
   liquidityStatus: string;
+  ownershipStatus: string;
   socials: Record<string, string>;
   copy: Record<string, string>;
 }
@@ -35,6 +39,8 @@ export interface WebsiteGeneratorHandoff {
   identity: TokenIdentity;
   replacements: AssetReplacementHandoff;
   analysis: WebsiteAnalyzerHandoff | null;
+  placement?: { assetId: string; sectionId: string | null; objectFit: string; objectPosition: string }[];
+  interactions?: { id: string; selector: string; trigger: string }[];
 }
 
 export interface VisualComparisonHandoff {

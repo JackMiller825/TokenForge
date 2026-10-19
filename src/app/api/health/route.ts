@@ -12,10 +12,10 @@ export function OPTIONS(request: Request) {
 export function GET(request: Request) {
   return cors(request, NextResponse.json({
     ok: true,
-    module: '02-reference-analyzer',
-    modules: ['01-reference-assets', '02-reference-analyzer'],
+    module: '03-asset-replacement',
+    modules: ['01-reference-assets', '02-reference-analyzer', '03-asset-replacement'],
     version: APP_VERSION,
     authRequired: Boolean(process.env.TOKENFORGE_AUTH_TOKEN),
-    capabilities: ['scan', 'analyze', 'projects', 'blueprint'],
+    capabilities: ['scan', 'analyze', 'projects', 'blueprint', 'replace'],
   }));
 }

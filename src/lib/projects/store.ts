@@ -125,6 +125,7 @@ export class ProjectStore {
       versions: [],
       warnings: [],
       demo: false,
+      replacementStatus: 'none',
     };
     this.driver.insert(project);
     mkdirSync(this.dir(project.id), { recursive: true });
@@ -194,7 +195,9 @@ export class ProjectStore {
   }
 
   file(id: string, relative: string): string | null {
-    if (!/^screenshots\/[a-z0-9-]+\/[a-z0-9-]+\.png$/.test(relative)) return null;
+    const shot = /^screenshots\/[a-z0-9-]+\/[a-z0-9-]+\.png$/;
+    const studio = /^studio\/(uploads|derived)\/[0-9a-f-]+\.(png|jpe?g|gif|webp|avif|bmp|ico|svg|mp4|webm|mov|woff2?|ttf|otf)$/i;
+    if (!shot.test(relative) && !studio.test(relative)) return null;
     const full = join(this.dir(id), relative);
     return existsSync(full) ? full : null;
   }

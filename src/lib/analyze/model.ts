@@ -183,6 +183,7 @@ export interface ReferenceProject {
   versions: { id: string; createdAt: string; label: string }[];
   warnings: string[];
   demo: boolean;
+  replacementStatus?: 'none' | 'draft' | 'ready';
 }
 
 export interface RawSection {

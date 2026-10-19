@@ -4,10 +4,11 @@ TokenForge is the reference half of a token-website builder.
 
 - Module 01 downloads public files into a ZIP with stable filenames and manifest 1.0.0.
 - Module 02 analyzes an authorized page into screenshots, sections, observed design values, asset positions, and a blueprint ZIP at schema 2.0.0.
+- Phase 3, the Replacement Studio, maps uploaded artwork onto that project and exports `tokenforge-replacement-package.zip` at schema 3.0.0.
 
 It does not generate a token site yet. Demo mode is sample data, not a scan.
 
-The working path is **enter a URL, scan or analyze, review the project, download the archive**.
+The working path is **enter a URL, scan or analyze, map replacements, approve them, download the package**.
 
 ## Requirements
 
@@ -24,7 +25,7 @@ Open http://localhost:3000. The production process is `npm run build` and `npm s
 
 ## Deployment
 
-**Single Node app.** `npm start` serves the dashboard and the API on one origin. Use this when you want scanning and analysis.
+**Single Node app.** `npm start`, or `start-tokenforge.cmd` on Windows, serves the dashboard and the API on one origin. Use this when you want scanning, analysis, and the replacement studio.
 
 **Split frontend and API.** GitHub Pages publishes the static dashboard only. Build it with `NEXT_PUBLIC_API_BASE=https://your-server.example`. On the server set `TOKENFORGE_ALLOWED_ORIGINS=https://jackmiller825.github.io`. The access token stays in `TOKENFORGE_AUTH_TOKEN` on the server. Do not put that token in `NEXT_PUBLIC_` variables.
 
@@ -102,6 +103,7 @@ src/lib/classify/         extension, MIME, and file-signature identification
 src/lib/discover/         URL, DOM, CSS, tracker, and robots parsing
 src/lib/browser/          Playwright scan worker
 src/lib/analyze/          screenshots, sections, design tokens, asset map, blueprint ZIP
+src/lib/replace/          uploads, variants, mapping, readiness, replacement ZIP
 src/lib/projects/         SQLite or JSON project index, files for screenshots
 src/lib/download/         bounded, retrying downloads
 src/lib/archive/          filenames, manifest, streaming ZIP
@@ -115,11 +117,10 @@ Job state and project files are stored in `.data/`. Screenshots are files. The p
 
 ## Later modules
 
-Modules 03–06 live in `src/lib/modules.ts` and are not implemented:
+Phase 4 and Phase 5 have contracts in `src/lib/modules.ts` and are not built yet:
 
-- Module 03 — Asset Replacement Studio: map a new brand onto reference files
-- Module 04 — Token Identity Studio: name, ticker, chain, contract, supply, taxes, socials, copy
-- Module 05 — Website Generator: build a Next.js site from the manifest and replacements
+- Module 04 — Token Identity Studio: name, ticker, network, contract, supply, taxes, liquidity, ownership, socials, copy
+- Module 05 — Website Generator: build a site from the blueprint, approved mappings, and replacement files
 - Module 06 — Visual Comparison and Publishing: compare, check responsiveness, prepare deploy
 
 ## Scripts
@@ -143,6 +144,14 @@ Default viewports are desktop 1440×900, tablet 768×1024, and mobile 390×844. 
 
 `reference-blueprint.zip` contains `manifest.json`, `README.md`, `assets/index.json`, `screenshots/`, and `analysis/` (`pages.json`, `sections.json`, `design-system.json`, `asset-map.json`, `animations.json`, `interactions.json`, `responsive.json`).
 
+## Phase 3 replacement studio
+
+Open **Replacement Studio** from a project in the library or from the analyzer. Upload images, video, or fonts. The server checks the file signature, stores the original upload, and can make a separate fitted variant with Sharp. Suggestions explain role and aspect ratio. Nothing is approved until you approve it.
+
+Mark each reference asset Replace, Preserve, Omit, or Not applicable. Images and video start as Replace. Fonts start as Preserve. The readiness percentage uses only the Replace scope. Export `tokenforge-replacement-package.zip` for the mapped library. Original reference binaries stay out of that ZIP. Their ids and URLs remain in the Phase 1 manifest inside the package.
+
+A screenshot overlay is a mockup. It is not a reconstructed page. One mascot upload does not recreate every pose or animation. Text inside a bitmap is recorded only when you mark it, except for an SVG that already contains a text element.
+
 ## GitHub Pages
 
 https://jackmiller825.github.io/TokenForge/ is the static frontend. It does not run Playwright. Connect it to a TokenForge server, or use Demo mode to inspect the sample blueprint. The sample is not an analysis of a live site.
@@ -158,7 +167,8 @@ https://jackmiller825.github.io/TokenForge/ is the static frontend. It does not 
 - Very large galleries are paged 24 at a time rather than virtualized.
 - Content-hash matches are recorded on `sameContentAs`. Both filenames are still saved when their paths differ.
 - Single-label hostnames are blocked. Real public sites use a dotted hostname.
-- GitHub Pages cannot capture screenshots or build a blueprint by itself.
+- GitHub Pages cannot capture screenshots, build a blueprint, or process uploaded images by itself.
+- A fitted variant is a still frame. It does not invent a new pose or rebuild video motion.
 - Inferred section roles are not certain until you correct them.
 - Canvas drawing commands and original animation source are not recovered.
 - Full-page captures taller than 12000px are marked partial.

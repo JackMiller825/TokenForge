@@ -10,6 +10,7 @@ const LINKS = [
   ['/', 'Overview'],
   ['/download', 'Asset Downloader'],
   ['/analyze', 'Website Analyzer'],
+  ['/replace', 'Replacement Studio'],
   ['/library', 'Project Library'],
   ['/help', 'Help'],
 ];

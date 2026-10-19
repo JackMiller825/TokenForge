@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { apiUrl, authHeaders } from '@/lib/api/client';
+import { withBase } from '@/lib/format';
 import { DEMO_ANALYSIS, DEMO_PROJECT } from '@/lib/demo/blueprint';
 import type { AnalysisResult, ReferenceProject } from '@/lib/analyze/model';
 import type { Job } from '@/lib/types';
@@ -122,6 +123,7 @@ function Analyzer() {
         <input aria-label="Reference website URL" className="flex-1 rounded-2xl border border-line bg-ink px-4 py-3" value={url} onChange={(event) => setUrl(event.target.value)} />
         <button className="rounded-2xl bg-lime px-5 py-3 font-semibold text-ink" type="submit">Analyze website</button>
         {analysis && !analysis.demo && <button className="rounded-2xl border border-line px-5 py-3" type="button" onClick={() => void exportBlueprint()}>Export blueprint</button>}
+        {project && !analysis?.demo && <a className="rounded-2xl border border-line px-5 py-3 text-center" href={withBase(`/replace?project=${project.id}`)}>Replacement studio</a>}
       </form>
       {job && total > 0 && (
         <div className="mt-4 rounded-2xl border border-line bg-panel px-4 py-3" aria-live="polite">

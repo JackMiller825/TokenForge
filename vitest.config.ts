@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.test.ts'],
     testTimeout: 20_000,
-    server: { deps: { external: ['playwright', 'playwright-core'] } },
+    server: { deps: { external: ['playwright', 'playwright-core', 'sharp'] } },
   },
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },

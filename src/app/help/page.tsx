@@ -68,9 +68,26 @@ export default function HelpPage() {
         <li>Private, loopback, and metadata addresses are rejected, including after a redirect.</li>
       </ul>
 
+      <h2 className="mt-10 text-2xl font-semibold">Asset Replacement Studio</h2>
+      <p className="mt-3 text-muted">Open a saved project from the library or the analyzer and choose Replacement studio. The studio keeps three separate stores: the original scan and blueprint, the files you upload, and fitted variants made from those uploads. Refreshing the browser reloads the saved studio. You do not upload the same replacement again unless you want a new file.</p>
+      <ol className="mt-3 list-decimal space-y-2 pl-5 text-muted">
+        <li>Drop images, video, or fonts into the upload area. TokenForge checks the file signature, dimensions, and a content hash. A matching hash reuses the stored file.</li>
+        <li>Roles such as mascot, logo, and banner are suggestions. Change a role when the guess is wrong.</li>
+        <li>Choose Suggest mappings for recommendations. A suggestion explains the role and aspect ratio. Low-confidence suggestions are not approved for you.</li>
+        <li>Map a file by hand, create a fitted variant, or mark the placement as custom artwork when one still image cannot cover that scene.</li>
+        <li>The center pane compares the reference screenshot and the replacement. The overlay uses Phase 2 coordinates. It is a mockup, not a rebuilt page.</li>
+        <li>Approve a mapping when it is ready. Bulk approval asks you to confirm. Reject or Restore clears a choice without deleting the original manifest.</li>
+        <li>The readiness bar counts only assets marked Replace. Images and video start in that scope. Fonts start as Preserve. Scripts and other files start as Not applicable.</li>
+        <li>Export <span className="font-mono text-[#e7edf6]">tokenforge-replacement-package.zip</span> when you want the mapped library. Schema version is 3.0.0.</li>
+      </ol>
+      <p className="mt-3 text-muted">Presets for a circular logo, website banner, Telegram banner, square mascot, and social image are starting sizes. Edit them or keep the reference dimensions instead. A variant is a resize, crop, pad, or circle mask. It is not new artwork, and it does not invent other mascot poses.</p>
+      <p className="mt-3 text-muted">Mark an image as containing text when you can see a name or ticker in the pixels. TokenForge only detects text by itself when an SVG contains a text element. Drawing a ticker over art belongs to Phase 4.</p>
+
       <h2 className="mt-10 text-2xl font-semibold">Known limitations</h2>
       <ul className="mt-3 list-disc space-y-2 pl-5 text-muted">
-        <li>GitHub Pages cannot analyze a site by itself.</li>
+        <li>GitHub Pages cannot analyze a site or process images by itself. Uploads, variants, and the replacement package need the TokenForge server.</li>
+        <li>One uploaded mascot does not recreate every pose, expression, or animation.</li>
+        <li>Fitted variants are still frames. GIF and video motion is not rebuilt.</li>
         <li>Logins, DRM, paywalls, and bot walls are not bypassed.</li>
         <li>HLS and DASH are not merged into one video.</li>
         <li>One browser task runs at a time. A restart marks a running job interrupted.</li>

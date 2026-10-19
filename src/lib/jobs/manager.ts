@@ -7,6 +7,8 @@ import { CancelledError } from '../browser/cancel';
 import { exportAssets } from '../download/pipeline';
 import { analyzeSite } from '../analyze/engine';
 import { writeBlueprint } from '../analyze/export';
+import { readStudio } from '../replace/disk';
+import { writeReplacementPackage } from '../replace/export';
 import { HttpError } from '../http/errors';
 import { projects } from '../projects/store';
 import { emptyProgress, type Job, type ScanInput, type ScanResult } from '../types';
@@ -400,6 +402,48 @@ export function startBlueprint(projectId: string): Job {
     } catch (error) {
       setStatus(job, 'failed');
       job.error = error instanceof Error ? error.message : 'Blueprint export failed';
+      rmSync(zipPath, { force: true });
+    } finally {
+      touch(job);
+      persist(job, true);
+    }
+  });
+  return job;
+}
+
+export function startReplacement(projectId: string): Job {
+  load();
+  const store = projects();
+  const project = store.get(projectId);
+  if (!project) throw new HttpError(404, 'Unknown project');
+  const studio = readStudio(store.dir(project.id));
+  if (!studio) throw new HttpError(404, 'Open the replacement studio before exporting a package');
+  const now = new Date().toISOString();
+  const job: Job = {
+    id: randomUUID(),
+    type: 'replacement',
+    status: 'queued',
+    createdAt: now,
+    updatedAt: now,
+    projectId: project.id,
+    progress: { ...emptyProgress('Preparing the replacement package'), total: 1 },
+  };
+  memory.jobs.set(job.id, job);
+  persist(job, true);
+  void enqueue(async () => {
+    if (job.status === 'cancelled') return;
+    setStatus(job, 'running');
+    const zipPath = join(root(), 'exports', `${job.id}.zip`);
+    try {
+      const outcome = await writeReplacementPackage(zipPath, store.dir(project.id), studio, store.readScan(project.id), store.readAnalysis(project.id));
+      if (outcome.errors.length) throw new Error(outcome.errors.join(' '));
+      const expiresAt = new Date(Date.now() + LIMITS.exportTtlMs).toISOString();
+      job.download = { token: signExport(job.id, Date.parse(expiresAt)), expiresAt, bytes: outcome.bytes, filename: 'tokenforge-replacement-package.zip' };
+      setStatus(job, 'completed');
+      job.progress = { ...job.progress, phase: 'done', message: 'Replacement package ready', completed: 1, total: 1, bytes: outcome.bytes };
+    } catch (error) {
+      setStatus(job, 'failed');
+      job.error = error instanceof Error ? error.message : 'Replacement export failed';
       rmSync(zipPath, { force: true });
     } finally {
       touch(job);

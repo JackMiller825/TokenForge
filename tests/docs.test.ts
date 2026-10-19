@@ -11,6 +11,8 @@ describe('documentation coverage', () => {
       expect(text).toMatch(/TOKENFORGE_ALLOWED_ORIGINS/);
       expect(text).toMatch(/NEXT_PUBLIC_API_BASE/);
       expect(text).toMatch(/reference-blueprint\.zip|design-system\.json/);
+      expect(text).toMatch(/Phase 3|Replacement Studio|replacement studio/);
+      expect(text).toMatch(/tokenforge-replacement-package\.zip/);
       expect(text).toMatch(/Demo mode/);
       expect(text).toMatch(/Known limitations/);
     }

@@ -19,9 +19,10 @@ export default function OverviewPage() {
       <div className="text-xs font-semibold uppercase tracking-[0.22em] text-lime">Reference intelligence</div>
       <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">Turn an authorized site into a blueprint.</h1>
       <p className="mt-4 max-w-2xl text-base leading-7 text-muted">Download the files, then analyze the page. TokenForge keeps the asset scan and the visual analysis on the same project. Demo data is labeled and is not a scan.</p>
-      <div className="mt-6 grid gap-3 md:grid-cols-3">
+      <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Card href="/download" title="Asset Downloader" copy="Collect images, video, fonts, and code with the original filenames." />
         <Card href="/analyze" title="Website Analyzer" copy="Capture screenshots, sections, colors, type, and where each asset sits." />
+        <Card href="/replace" title="Replacement Studio" copy="Upload new artwork, map it to the reference, and approve what is ready." />
         <Card href="/library" title="Project Library" copy="Open, rename, compare, or export a reference project." />
       </div>
       <section className="mt-8 rounded-3xl border border-line bg-panel p-5">
