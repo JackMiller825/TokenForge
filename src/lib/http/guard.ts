@@ -4,7 +4,34 @@ import { HttpError } from './errors';
 
 const buckets = new Map<string, { tokens: number; updated: number }>();
 
-const RATES = { scan: 8, export: 8, preview: 120, read: 180 } as const;
+const RATES = { scan: 8, export: 8, analyze: 4, preview: 120, read: 180 } as const;
+
+const DEFAULT_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000', 'https://jackmiller825.github.io'];
+
+export function allowedOrigins(): string[] {
+  const extra = (process.env.TOKENFORGE_ALLOWED_ORIGINS || '').split(',').map((item) => item.trim()).filter(Boolean);
+  return [...new Set([...DEFAULT_ORIGINS, ...extra])];
+}
+
+export function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  return allowedOrigins().includes(origin);
+}
+
+export function cors(request: Request, response: Response): Response {
+  const origin = request.headers.get('origin');
+  if (!origin || !isAllowedOrigin(origin)) return response;
+  const headers = new Headers(response.headers);
+  headers.set('Access-Control-Allow-Origin', origin);
+  headers.set('Vary', 'Origin');
+  headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Tokenforge-Token');
+  headers.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+export function preflight(request: Request): Response {
+  return cors(request, new Response(null, { status: 204 }));
+}
 
 function clientKey(request: Request): string {
   if (process.env.TOKENFORGE_TRUST_PROXY === '1') {
@@ -45,7 +72,7 @@ export function assertAuthorized(request: Request) {
 
 export function assertSameOrigin(request: Request) {
   const origin = request.headers.get('origin');
-  if (!origin) return;
+  if (!origin || isAllowedOrigin(origin)) return;
   const host = request.headers.get('host');
   let originHost = '';
   try {
@@ -57,6 +84,7 @@ export function assertSameOrigin(request: Request) {
 }
 
 export function assertSameSite(request: Request) {
+  if (isAllowedOrigin(request.headers.get('origin'))) return;
   const site = request.headers.get('sec-fetch-site');
   if (site && site !== 'same-origin' && site !== 'none') throw new HttpError(403, 'Cross-site request blocked');
 }
@@ -70,6 +98,6 @@ export function authorize(request: Request, bucket: keyof typeof RATES, options:
     return null;
   } catch (error) {
     const status = error instanceof HttpError ? error.status : 400;
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Request blocked' }, { status });
+    return cors(request, NextResponse.json({ error: error instanceof Error ? error.message : 'Request blocked' }, { status })) as NextResponse;
   }
 }

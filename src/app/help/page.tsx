@@ -1,49 +1,83 @@
 import Link from 'next/link';
+import { withBase } from '@/lib/format';
 
 export default function HelpPage() {
   return (
-    <main className="relative z-10 mx-auto max-w-3xl px-5 py-10 text-[15px] leading-7">
-      <Link href="/" className="text-sm text-lime">Back to the dashboard</Link>
-      <p className="mt-8 text-xs font-semibold uppercase tracking-[0.2em] text-lime">Module 01</p>
-      <h1 className="mt-3 text-4xl font-semibold tracking-tight">Reference asset downloader</h1>
-      <p className="mt-4 text-muted">Enter a public URL, scan the site, review the files TokenForge found, then download a ZIP. The archive keeps original filenames when the URL has them, and marks a name as inferred when it had to be created.</p>
+    <article className="max-w-3xl text-[15px] leading-7">
+      <Link href={withBase('/')} className="text-sm text-lime">Back to the overview</Link>
+      <p className="mt-8 text-xs font-semibold uppercase tracking-[0.2em] text-lime">Modules 01 and 02</p>
+      <h1 className="mt-3 text-4xl font-semibold tracking-tight">Reference website intelligence</h1>
+      <p className="mt-4 text-muted">TokenForge downloads public files and then records how an authorized page is built. The asset scan and the visual analysis stay on one project. A finished download is not the same thing as a finished blueprint.</p>
 
-      <h2 className="mt-10 text-2xl font-semibold">Workflow</h2>
+      <h2 className="mt-10 text-2xl font-semibold">What Phase 2 does</h2>
+      <p className="mt-3 text-muted">The website analyzer opens the page in Chromium and writes a blueprint: screenshots, detected sections, observed colors and type, asset positions, and motion it could actually see. It does not invent a design system and it does not recover the site’s source code.</p>
+
+      <h2 className="mt-10 text-2xl font-semibold">Backend connection</h2>
+      <p className="mt-3 text-muted">The status control has four states. Connecting means a health check is in progress. Connected means the TokenForge server answered. Unavailable means a backend URL was set and did not answer. Demo mode shows sample projects and a sample blueprint. Demo data is labeled and is not a scan.</p>
+      <p className="mt-3 text-muted">GitHub Pages only hosts this interface. Scanning and analysis run on a Node.js server with Chromium. Set the server URL in the status menu, or build the static site with <span className="font-mono text-[#e7edf6]">NEXT_PUBLIC_API_BASE</span>. That value is a public address, not a password. Leave <span className="font-mono text-[#e7edf6]">TOKENFORGE_AUTH_TOKEN</span> on the server and type it into the downloader when the server asks for it.</p>
+
+      <h2 className="mt-10 text-2xl font-semibold">How to analyze a website</h2>
       <ol className="mt-3 list-decimal space-y-2 pl-5 text-muted">
-        <li>Paste an http or https URL you are allowed to collect from.</li>
-        <li>Choose Quick, Deep, or Full scan.</li>
-        <li>Watch progress. Cancel if you need to stop.</li>
-        <li>Filter, search, and select assets. Open a card for metadata and a safe preview.</li>
-        <li>Choose Organized folders or Source paths, then export. Failures stay listed and are written into <span className="font-mono text-[#e7edf6]">manifest.json</span>.</li>
+        <li>Scan the URL from Asset Downloader if you also want the files. The project is saved when the scan completes.</li>
+        <li>Choose Analyze website. TokenForge reuses the asset list already stored for that project and does not download those files again.</li>
+        <li>You can also analyze a URL directly. That still renders the page, and it maps assets it can see even when no ZIP exists yet.</li>
+        <li>Wait through the stages. The percentage moves only as stages finish. Cancel stops the browser.</li>
+        <li>Open the blueprint. Export <span className="font-mono text-[#e7edf6]">reference-blueprint.zip</span> when the required screenshots exist.</li>
       </ol>
 
-      <h2 className="mt-10 text-2xl font-semibold">Scan modes</h2>
-      <ul className="mt-3 space-y-2 text-muted">
-        <li><strong className="text-[#e7edf6]">Quick.</strong> The first page only, including a short scroll so lazy-loaded media can appear. About 45 seconds.</li>
-        <li><strong className="text-[#e7edf6]">Deep.</strong> Same-origin HTML links, up to 12 pages and depth 3. Defaults are 6 pages and depth 2. About 2 minutes. Paths disallowed by robots.txt are not followed.</li>
-        <li><strong className="text-[#e7edf6]">Full.</strong> Scrolling plus a few safe clicks on buttons, tabs, and disclosures. It will not submit forms, connect a wallet, approve a transaction, or buy anything. Defaults are 3 pages and depth 1. About 90 seconds.</li>
-      </ul>
-
-      <h2 className="mt-10 text-2xl font-semibold">Filenames</h2>
-      <p className="mt-3 text-muted">The basename, including capitalization and Unicode letters, is kept when the URL has one. Unsafe characters and path traversal are removed. <span className="font-mono text-[#e7edf6]">Hero.png</span> and <span className="font-mono text-[#e7edf6]">hero.PNG</span> collide on Windows, so the second becomes <span className="font-mono text-[#e7edf6]">hero__2.PNG</span>. Hashed names such as <span className="font-mono text-[#e7edf6]">a1b2c3d4.png</span> stay hashed. If the URL has no filename, the saved name is <span className="font-mono text-[#e7edf6]">asset-N.ext</span> and <span className="font-mono text-[#e7edf6]">filenameInferred</span> is true. An extension added from the content type is also marked inferred.</p>
-
-      <h2 className="mt-10 text-2xl font-semibold">ZIP layouts</h2>
-      <p className="mt-3 text-muted">Organized mode is the default: <span className="font-mono text-[#e7edf6]">images/</span>, <span className="font-mono text-[#e7edf6]">videos/</span>, <span className="font-mono text-[#e7edf6]">fonts/</span>, <span className="font-mono text-[#e7edf6]">audio/</span>, <span className="font-mono text-[#e7edf6]">styles/</span>, <span className="font-mono text-[#e7edf6]">scripts/</span>, <span className="font-mono text-[#e7edf6]">documents/</span>, <span className="font-mono text-[#e7edf6]">other/</span>, plus <span className="font-mono text-[#e7edf6]">manifest.json</span> and <span className="font-mono text-[#e7edf6]">README.md</span>. Source mode keeps a sanitized host and directory path. The preview, the ZIP, and the manifest use the same final path after export.</p>
-
-      <h2 className="mt-10 text-2xl font-semibold">Limits and failures</h2>
-      <p className="mt-3 text-muted">Each file can be up to 25 MB. An archive can be up to 160 MB and 250 files. Discovery stops at 700 assets. Downloads use four at a time, retry transient errors with backoff, and time out after 15 seconds. A failed file does not erase the files that succeeded. Export links expire after 15 minutes.</p>
-
-      <h2 className="mt-10 text-2xl font-semibold">Security</h2>
-      <p className="mt-3 text-muted">Every page, redirect, and file request must be public http or https on port 80 or 443. Loopback, private, link-local, and metadata addresses are blocked, including after a redirect. The browser is sent through an egress proxy that connects only to an address it has just checked. Set <span className="font-mono text-[#e7edf6]">TOKENFORGE_AUTH_TOKEN</span> before anyone else can reach the server. Previews are images, video, audio, and fonts served with a locked content security policy. Scripts from the target site are never executed in this origin.</p>
-
-      <h2 className="mt-10 text-2xl font-semibold">What this module does not do</h2>
+      <h2 className="mt-10 text-2xl font-semibold">Blueprint panels</h2>
       <ul className="mt-3 list-disc space-y-2 pl-5 text-muted">
-        <li>It does not solve captchas, evade bot walls, log into accounts, or bypass DRM and paywalls.</li>
-        <li>It does not stitch HLS or DASH streams into one video file.</li>
-        <li>GitHub Pages only hosts this interface and the sample library. Scanning needs a Node.js process with Chromium.</li>
-        <li>A restart cancels an in-memory scan. This build uses a local job folder, not a separate worker fleet.</li>
-        <li>Later modules for analysis, replacement, token identity, site generation, and publishing are interfaces only.</li>
+        <li>Sections lists detected regions, the inferred role, and a confidence score.</li>
+        <li>The center pane shows the full-page capture for desktop, tablet, or mobile. Fit and zoom change the view, not the file.</li>
+        <li>The side pane shows the selected section’s box, selector, assets, and observed motion.</li>
+        <li>Observed colors are counted from computed styles. A declared CSS variable is marked when the same value appears in a custom property.</li>
       </ul>
-    </main>
+
+      <h2 className="mt-10 text-2xl font-semibold">Screenshot settings</h2>
+      <p className="mt-3 text-muted">Desktop is 1440 × 900, tablet is 768 × 1024, and mobile is 390 × 844. Device scale is 1. Captures wait for fonts and a short settle period. They do not wait for every network connection to go idle. A page taller than 12000px is marked partial. Section images use names such as <span className="font-mono text-[#e7edf6]">screenshots/desktop/section-01-hero.png</span>.</p>
+
+      <h2 className="mt-10 text-2xl font-semibold">Section mapping</h2>
+      <p className="mt-3 text-muted">Sections come from landmarks, headings, and visible layout, not only from <span className="font-mono text-[#e7edf6]">section</span> tags. A role such as hero or token is inferred unless you correct it. Saving a correction sets confidence to corrected-by-you. Rerunning analysis starts a new version and does not keep those edits.</p>
+
+      <h2 className="mt-10 text-2xl font-semibold">Asset mapping</h2>
+      <p className="mt-3 text-muted">Each visible image, video, poster, CSS background, or SVG records its section, box, fit, opacity, transform, radius, and stacking. A Phase 1 id is attached only when the URL matches exactly, by canonical URL, or by a unique path with no query string. Different query strings stay separate. Move an asset to another section when the match is ambiguous.</p>
+
+      <h2 className="mt-10 text-2xl font-semibold">Animation limitations</h2>
+      <p className="mt-3 text-muted">TokenForge records CSS animations, transitions, Web Animations API timings, sticky elements, video, canvas, accordions, and a few safe hovers. It does not replay wallets, forms, purchases, or logins. A carousel or parallax note is an inference. The record is observable behavior, not the original animation source.</p>
+
+      <h2 className="mt-10 text-2xl font-semibold">Export files</h2>
+      <p className="mt-3 text-muted">The blueprint ZIP contains <span className="font-mono text-[#e7edf6]">manifest.json</span>, <span className="font-mono text-[#e7edf6]">README.md</span>, <span className="font-mono text-[#e7edf6]">assets/index.json</span>, <span className="font-mono text-[#e7edf6]">screenshots/</span>, and <span className="font-mono text-[#e7edf6]">analysis/</span> with pages, sections, design-system, asset-map, animations, interactions, and responsive JSON. Schema version is 2.0.0. The asset downloader still writes manifest version 1.0.0.</p>
+
+      <h2 className="mt-10 text-2xl font-semibold">Deployment</h2>
+      <p className="mt-3 text-muted">One process: <span className="font-mono text-[#e7edf6]">npm run build</span> and <span className="font-mono text-[#e7edf6]">npm start</span>. The browser talks to the same origin. Split deployment: run that server behind HTTPS, set <span className="font-mono text-[#e7edf6]">TOKENFORGE_ALLOWED_ORIGINS</span> to the Pages origin, and set <span className="font-mono text-[#e7edf6]">NEXT_PUBLIC_API_BASE</span> when building the static frontend. Projects are stored in SQLite when Node provides <span className="font-mono text-[#e7edf6]">node:sqlite</span>, otherwise in a JSON index. Screenshots stay as files. A production migration can move that index to hosted SQLite or Postgres without putting PNG bytes in database rows.</p>
+
+      <h2 className="mt-10 text-2xl font-semibold">Environment variables</h2>
+      <ul className="mt-3 list-disc space-y-2 pl-5 text-muted">
+        <li><span className="font-mono text-[#e7edf6]">TOKENFORGE_AUTH_TOKEN</span> — required before the server is public.</li>
+        <li><span className="font-mono text-[#e7edf6]">TOKENFORGE_SECRET</span> — signs download links.</li>
+        <li><span className="font-mono text-[#e7edf6]">TOKENFORGE_ALLOWED_ORIGINS</span> — extra CORS origins, comma separated.</li>
+        <li><span className="font-mono text-[#e7edf6]">NEXT_PUBLIC_API_BASE</span> — public API origin for the static frontend.</li>
+        <li><span className="font-mono text-[#e7edf6]">TOKENFORGE_DATA_DIR</span> — where jobs, projects, and screenshots are stored.</li>
+      </ul>
+
+      <h2 className="mt-10 text-2xl font-semibold">Troubleshooting</h2>
+      <ul className="mt-3 list-disc space-y-2 pl-5 text-muted">
+        <li>Unavailable usually means the server is stopped, the URL is wrong, or CORS does not include this site’s origin.</li>
+        <li>Chromium missing: run <span className="font-mono text-[#e7edf6]">npx playwright install chromium</span> on the server.</li>
+        <li>A site that blocks headless browsers returns a partial page or an error. TokenForge does not disguise the browser.</li>
+        <li>Private, loopback, and metadata addresses are rejected, including after a redirect.</li>
+      </ul>
+
+      <h2 className="mt-10 text-2xl font-semibold">Known limitations</h2>
+      <ul className="mt-3 list-disc space-y-2 pl-5 text-muted">
+        <li>GitHub Pages cannot analyze a site by itself.</li>
+        <li>Logins, DRM, paywalls, and bot walls are not bypassed.</li>
+        <li>HLS and DASH are not merged into one video.</li>
+        <li>One browser task runs at a time. A restart marks a running job interrupted.</li>
+        <li>Section roles below a confident landmark are inferred.</li>
+        <li>Canvas drawing commands and JavaScript animation sources are not reconstructed.</li>
+        <li>Very long pages are capped and marked partial.</li>
+      </ul>
+    </article>
   );
 }

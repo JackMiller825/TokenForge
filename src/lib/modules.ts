@@ -2,7 +2,8 @@ import type { ManifestFile } from './types';
 
 /**
  * Handoff contracts for later TokenForge modules.
- * Module 01 stores null in every slot and does not run these modules.
+ * The asset manifest still stores null in every slot.
+ * Module 02 writes its own blueprint package instead of filling this slot.
  */
 export interface WebsiteAnalyzerHandoff {
   referenceUrl: string;

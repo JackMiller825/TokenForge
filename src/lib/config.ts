@@ -1,4 +1,4 @@
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '2.0.0';
 
 export const LIMITS = {
   maxAssetBytes: positiveInt(process.env.TOKENFORGE_MAX_ASSET_BYTES, 25 * 1024 * 1024),
@@ -14,6 +14,10 @@ export const LIMITS = {
   maxStylesheets: 20,
   maxPagesCap: 12,
   maxDepthCap: 3,
+  maxFullPageHeight: 12_000,
+  maxSectionShots: 12,
+  analysisSettleMs: 500,
+  maxBrowsers: 1,
 } as const;
 
 export const MODE_DEFAULTS = {

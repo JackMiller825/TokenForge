@@ -44,3 +44,24 @@ export function parseExportInput(body: unknown): { jobId: string; selectedIds: s
   const structure: ZipStructure = value.structure === 'source' ? 'source' : 'organized';
   return { jobId: value.jobId, selectedIds, structure };
 }
+
+export function parseAnalyzeInput(body: unknown): { url?: string; projectId?: string } {
+  if (!body || typeof body !== 'object') throw new HttpError(400, 'Invalid request');
+  const value = body as Record<string, unknown>;
+  const projectId = typeof value.projectId === 'string' ? value.projectId : undefined;
+  if (projectId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(projectId)) {
+    throw new HttpError(400, 'Unknown project');
+  }
+  if (typeof value.url === 'string' && value.url.trim()) {
+    let parsed: URL;
+    try {
+      parsed = new URL(value.url.trim());
+    } catch {
+      throw new HttpError(400, 'Enter a valid public http(s) URL');
+    }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new HttpError(400, 'Enter a valid public http(s) URL');
+    return { url: parsed.href, projectId };
+  }
+  if (projectId) return { projectId };
+  throw new HttpError(400, 'A project or URL is required');
+}

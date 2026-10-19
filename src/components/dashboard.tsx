@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, ArrowDownToLine, Check, Globe2, Layers, LoaderCircle, Search, ShieldCheck, X } from 'lucide-react';
+import { AlertTriangle, ArrowDownToLine, Check, Globe2, LoaderCircle, Search, X } from 'lucide-react';
 import { planPaths } from '@/lib/archive/names';
 import { downloadSampleZip, SAMPLE_SCAN } from '@/lib/demo/sample';
-import { formatBytes, STATIC_EXPORT, withBase } from '@/lib/format';
+import { apiUrl } from '@/lib/api/client';
+import { useBackend } from '@/components/backend';
+import { formatBytes, withBase } from '@/lib/format';
 import type { AssetRecord, Job, ScanMode, ScanResult, ZipStructure } from '@/lib/types';
 import { CATEGORIES } from '@/lib/types';
 import { DetailDrawer } from './detail-drawer';
@@ -42,13 +44,13 @@ export default function Dashboard() {
   const [size, setSize] = useState('all');
   const [status, setStatus] = useState('all');
   const [busy, setBusy] = useState<'scan' | 'export' | null>(null);
+  const backend = useBackend();
 
   useEffect(() => {
     const saved = sessionStorage.getItem('tokenforge-token');
     if (saved) setToken(saved);
-    if (STATIC_EXPORT) return;
-    void fetch(withBase('/api/health')).then((response) => response.json()).then((body) => setAuthRequired(Boolean(body.authRequired))).catch(() => undefined);
-  }, []);
+    setAuthRequired(backend.authRequired);
+  }, [backend.authRequired]);
 
   useEffect(() => {
     if (!scanJob || ['completed', 'failed', 'cancelled'].includes(scanJob.status)) return undefined;
@@ -74,7 +76,7 @@ export default function Dashboard() {
       }
       if (job.status === 'completed' && job.download) {
         const link = document.createElement('a');
-        link.href = withBase(`/api/exports/${job.download.token}`);
+        link.href = apiUrl(`/api/exports/${job.download.token}`);
         link.download = job.download.filename;
         document.body.appendChild(link);
         link.click();
@@ -110,8 +112,8 @@ export default function Dashboard() {
 
   async function startScan(event: React.FormEvent) {
     event.preventDefault();
-    if (STATIC_EXPORT) {
-      setError('GitHub Pages can show this dashboard, but scanning needs the TokenForge server. Use Load sample library here, or run npm start on a Node host.');
+    if (backend.state !== 'connected') {
+      setError('GitHub Pages can show this dashboard, but scanning needs the TokenForge server. Connect it from the status menu, or load the sample library. Sample files are not a scan.');
       return;
     }
     setBusy('scan');
@@ -122,7 +124,7 @@ export default function Dashboard() {
     setExportJob(null);
     sessionStorage.setItem('tokenforge-token', token);
     try {
-      const response = await fetch(withBase('/api/scan'), {
+      const response = await fetch(apiUrl('/api/scan'), {
         method: 'POST',
         headers: authHeaders(token),
         body: JSON.stringify({ url, mode, maxPages, maxDepth, includeTrackers }),
@@ -146,7 +148,7 @@ export default function Dashboard() {
     setBusy('export');
     setError('');
     try {
-      const response = await fetch(withBase('/api/download'), {
+      const response = await fetch(apiUrl('/api/download'), {
         method: 'POST',
         headers: authHeaders(token),
         body: JSON.stringify({ jobId: scanJob.id, selectedIds: selected, structure }),
@@ -188,26 +190,12 @@ export default function Dashboard() {
   const previewFor = (asset: AssetRecord) => {
     if (demo) return asset.category === 'images' ? withBase(asset.sourceUrl) : null;
     if (!scanJob || !['images', 'videos', 'audio', 'fonts'].includes(asset.category)) return null;
-    return withBase(`/api/preview?jobId=${encodeURIComponent(scanJob.id)}&assetId=${encodeURIComponent(asset.id)}`);
+    return apiUrl(`/api/preview?jobId=${encodeURIComponent(scanJob.id)}&assetId=${encodeURIComponent(asset.id)}`);
   };
 
   return (
-    <div className="relative z-10 min-h-screen">
-      <header className="sticky top-0 z-20 border-b border-line/80 bg-ink/85 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-3 font-semibold tracking-tight">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-lime text-ink"><Layers size={20} /></span>
-            <span>TOKEN<span className="text-lime">FORGE</span></span>
-            <span className="hidden rounded-md border border-line px-2 py-1 text-[11px] text-muted sm:inline">MODULE 01</span>
-          </Link>
-          <div className="flex items-center gap-4 text-sm text-muted">
-            <span className="hidden items-center gap-2 md:flex"><ShieldCheck size={16} /> Reference assets</span>
-            <Link href="/help" data-testid="help-link" className="rounded-lg border border-line px-3 py-2 text-sm text-[#e7edf6]">Help</Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[320px_1fr] lg:py-8">
+    <div>
+      <main className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <aside className="h-fit rounded-3xl border border-line bg-panel p-4 lg:sticky lg:top-24">
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lime">Scan</div>
           <div className="mt-3 grid grid-cols-3 gap-2">
@@ -239,7 +227,7 @@ export default function Dashboard() {
         </aside>
 
         <section>
-          {STATIC_EXPORT && <div className="mb-4 rounded-2xl border border-lime/40 bg-lime/10 px-4 py-3 text-sm leading-6">This GitHub Pages deployment is a static preview. Live scanning runs on the TokenForge server because it needs Chromium. Load the sample library to review the gallery, or run the app with <span className="font-mono">npm start</span>.</div>}
+          {backend.state !== 'connected' && <div className="mb-4 rounded-2xl border border-lime/40 bg-lime/10 px-4 py-3 text-sm leading-6">This page can review a sample library without a server. Live scanning runs on the TokenForge server because it needs Chromium. Connect that server from the status menu, then scan.</div>}
           <div className="rise max-w-3xl">
             <div className="text-xs font-semibold uppercase tracking-[0.22em] text-lime">Reference intelligence</div>
             <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">Collect the reference.<br />Keep the filenames.</h1>
@@ -265,7 +253,7 @@ export default function Dashboard() {
             <div className="mt-4 rounded-2xl border border-line bg-panel px-4 py-4" aria-live="polite">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm font-semibold"><span className={`h-2 w-2 rounded-full bg-lime ${running ? 'pulse' : ''}`} />{exportJob?.progress.message || scanJob?.progress.message}</div>
-                {running && <button type="button" className="rounded-lg border border-line px-3 py-1.5 text-xs" onClick={() => void fetch(withBase(`/api/jobs/${(exportJob ?? scanJob)!.id}/cancel`), { method: 'POST', headers: authHeaders(token) })}>Cancel</button>}
+                {running && <button type="button" className="rounded-lg border border-line px-3 py-1.5 text-xs" onClick={() => void fetch(apiUrl(`/api/jobs/${(exportJob ?? scanJob)!.id}/cancel`), { method: 'POST', headers: authHeaders(token) })}>Cancel</button>}
               </div>
               <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink">
                 <div className="h-full bg-lime transition-all" style={{ width: progressWidth(exportJob ?? scanJob) }} />
@@ -276,6 +264,14 @@ export default function Dashboard() {
 
           {error && <div role="alert" className="mt-4 flex gap-3 rounded-2xl border border-red-900 bg-red-950/40 px-4 py-3 text-sm text-red-100"><AlertTriangle size={18} /> {error}</div>}
           {scan?.warnings.map((warning) => <div key={warning} className="mt-3 rounded-2xl border border-amber-800/70 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">{warning}</div>)}
+          {scan && scanJob?.projectId && !demo && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="rounded-lg border border-line px-3 py-2 text-sm text-lime">Asset scan complete</span>
+              <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={withBase(`/analyze?project=${scanJob.projectId}`)}>Analyze website</Link>
+              <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={withBase(`/library`)}>Open project</Link>
+            </div>
+          )}
+          {demo && <div className="mt-4 rounded-2xl border border-sky-800 bg-sky-950/40 px-4 py-3 text-sm text-sky-100">Sample library. These files are not a scan of a website.</div>}
 
           {!scan && (
             <div className="mt-6 grid gap-3 md:grid-cols-3">
@@ -375,7 +371,7 @@ function watch(id: string, onJob: (job: Job) => void) {
       if (poll) clearInterval(poll);
     }
   };
-  const source = new EventSource(withBase(`/api/jobs/${id}/events`));
+  const source = new EventSource(apiUrl(`/api/jobs/${id}/events`));
   source.onmessage = (event) => {
     try { apply(JSON.parse(event.data) as Job); } catch { /* ignore malformed events */ }
   };
@@ -383,7 +379,7 @@ function watch(id: string, onJob: (job: Job) => void) {
     source.close();
     if (closed) return;
     poll = setInterval(() => {
-      void fetch(withBase(`/api/jobs/${id}`)).then((response) => response.ok ? response.json() : null).then((job) => { if (job) apply(job as Job); });
+      void fetch(apiUrl(`/api/jobs/${id}`)).then((response) => response.ok ? response.json() : null).then((job) => { if (job) apply(job as Job); });
     }, 1000);
   };
   return () => {

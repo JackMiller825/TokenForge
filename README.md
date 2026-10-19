@@ -1,8 +1,13 @@
-# TokenForge — Module 01, Reference Asset Downloader
+# TokenForge — Reference Website Intelligence
 
-TokenForge collects public files from a reference website and exports them as a ZIP with stable filenames and a versioned manifest. This repository is Module 01 of a larger token-website builder. It does not generate a token site.
+TokenForge is the reference half of a token-website builder.
 
-The working path is **enter a URL, scan, review the files, download a ZIP**.
+- Module 01 downloads public files into a ZIP with stable filenames and manifest 1.0.0.
+- Module 02 analyzes an authorized page into screenshots, sections, observed design values, asset positions, and a blueprint ZIP at schema 2.0.0.
+
+It does not generate a token site yet. Demo mode is sample data, not a scan.
+
+The working path is **enter a URL, scan or analyze, review the project, download the archive**.
 
 ## Requirements
 
@@ -15,7 +20,17 @@ npx playwright install chromium
 npm run dev
 ```
 
-Open http://localhost:3000. The production process is `npm run build` and `npm start`. It has to be a long-lived Node.js server with Chromium installed. A static host, including GitHub Pages, cannot run the scanner.
+Open http://localhost:3000. The production process is `npm run build` and `npm start`. It has to be a long-lived Node.js server with Chromium installed.
+
+## Deployment
+
+**Single Node app.** `npm start` serves the dashboard and the API on one origin. Use this when you want scanning and analysis.
+
+**Split frontend and API.** GitHub Pages publishes the static dashboard only. Build it with `NEXT_PUBLIC_API_BASE=https://your-server.example`. On the server set `TOKENFORGE_ALLOWED_ORIGINS=https://jackmiller825.github.io`. The access token stays in `TOKENFORGE_AUTH_TOKEN` on the server. Do not put that token in `NEXT_PUBLIC_` variables.
+
+The status menu shows Connected, Connecting, Unavailable, or Demo mode. Demo mode is explicit sample data.
+
+Projects are indexed in SQLite through Node’s `node:sqlite` when that built-in loads. Otherwise the index is `projects/index.json`. Screenshots and analysis JSON stay as files, not database blobs. A later host can replace the index with Postgres or hosted SQLite without changing the file layout.
 
 ## Scan modes
 
@@ -80,27 +95,28 @@ DNS pinning is not a substitute for a network egress firewall. Run the public se
 ## Project layout
 
 ```text
-src/app/                  dashboard, help, API routes
-src/components/           gallery and asset details
+src/app/                  overview, downloader, analyzer, library, help, API routes
+src/components/           shell, gallery, blueprint
 src/lib/security/         URL policy, pinned fetch, browser egress proxy
 src/lib/classify/         extension, MIME, and file-signature identification
 src/lib/discover/         URL, DOM, CSS, tracker, and robots parsing
 src/lib/browser/          Playwright scan worker
+src/lib/analyze/          screenshots, sections, design tokens, asset map, blueprint ZIP
+src/lib/projects/         SQLite or JSON project index, files for screenshots
 src/lib/download/         bounded, retrying downloads
 src/lib/archive/          filenames, manifest, streaming ZIP
 src/lib/jobs/             local job state and expiring export links
-src/lib/modules.ts        contracts for modules 02–06
-tests/                    unit tests and a local fixture site
+src/lib/modules.ts        contracts for modules 03–06
+tests/                    unit tests and local fixture sites
 public/demo/              sample library used by the static preview
 ```
 
-Job state is stored in `.data/`. That directory is local scratch space, not a database. The same module boundaries can later move blobs to object storage and jobs to a queue without changing the manifest.
+Job state and project files are stored in `.data/`. Screenshots are files. The project index uses SQLite when Node provides it. The same boundaries can later move blobs to object storage and the index to a hosted database without changing the blueprint schema.
 
 ## Later modules
 
-Module 01 only fills the manifest. These contracts live in `src/lib/modules.ts` and are not implemented:
+Modules 03–06 live in `src/lib/modules.ts` and are not implemented:
 
-- Module 02 — Website Analyzer: screenshots, sections, color, type, motion
 - Module 03 — Asset Replacement Studio: map a new brand onto reference files
 - Module 04 — Token Identity Studio: name, ticker, chain, contract, supply, taxes, socials, copy
 - Module 05 — Website Generator: build a Next.js site from the manifest and replacements
@@ -119,9 +135,17 @@ npm run build:pages
 
 `npm test` uses Vitest. Browser coverage runs against a local fixture site, not a live token website. The fixture includes normal images, CSS backgrounds, lazy images, a video poster, an external image, srcset, nested stylesheets, duplicate filenames, and a button that inserts an image.
 
+## Phase 2 blueprint
+
+Analyze from **Website Analyzer**, or from **Analyze website** after an asset scan. The second path reuses the saved asset list and does not download those files again.
+
+Default viewports are desktop 1440×900, tablet 768×1024, and mobile 390×844. Section roles are inferred unless you correct them. Asset URLs match a Phase 1 id only when the match is exact, canonical, or a unique path with an empty query. Animation records describe behavior the browser could see.
+
+`reference-blueprint.zip` contains `manifest.json`, `README.md`, `assets/index.json`, `screenshots/`, and `analysis/` (`pages.json`, `sections.json`, `design-system.json`, `asset-map.json`, `animations.json`, `interactions.json`, `responsive.json`).
+
 ## GitHub Pages
 
-https://jackmiller825.github.io/TokenForge/ is a static preview of the dashboard plus the sample library. The scan API and Chromium are not running there. Use the sample library to review the interface, and run `npm start` when you need a real scan.
+https://jackmiller825.github.io/TokenForge/ is the static frontend. It does not run Playwright. Connect it to a TokenForge server, or use Demo mode to inspect the sample blueprint. The sample is not an analysis of a live site.
 
 ## Known limitations
 
@@ -134,5 +158,10 @@ https://jackmiller825.github.io/TokenForge/ is a static preview of the dashboard
 - Very large galleries are paged 24 at a time rather than virtualized.
 - Content-hash matches are recorded on `sameContentAs`. Both filenames are still saved when their paths differ.
 - Single-label hostnames are blocked. Real public sites use a dotted hostname.
+- GitHub Pages cannot capture screenshots or build a blueprint by itself.
+- Inferred section roles are not certain until you correct them.
+- Canvas drawing commands and original animation source are not recovered.
+- Full-page captures taller than 12000px are marked partial.
+- One browser task runs at a time.
 
 Only collect assets you have the right to use.

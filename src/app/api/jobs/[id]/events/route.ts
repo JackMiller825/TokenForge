@@ -1,8 +1,12 @@
-import { authorize } from '@/lib/http/guard';
+import { authorize, cors, preflight } from '@/lib/http/guard';
 import { getJob } from '@/lib/jobs/manager';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+export function OPTIONS(request: Request) {
+  return preflight(request);
+}
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const blocked = authorize(request, 'read', { auth: false });
@@ -33,11 +37,11 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       clearInterval(timer);
     },
   });
-  return new Response(stream, {
+  return cors(request, new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
     },
-  });
+  }));
 }

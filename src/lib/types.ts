@@ -86,7 +86,7 @@ export interface ManifestFile {
 }
 
 export interface Progress {
-  phase: 'queued' | 'launching' | 'loading' | 'crawling' | 'extracting' | 'finalizing' | 'downloading' | 'archiving' | 'done';
+  phase: 'queued' | 'launching' | 'loading' | 'crawling' | 'extracting' | 'finalizing' | 'downloading' | 'archiving' | 'done' | 'initializing' | 'rendering-desktop' | 'discovering-sections' | 'mapping-assets' | 'extracting-tokens' | 'inspecting-interactions' | 'rendering-responsive' | 'generating-screenshots' | 'validating';
   message: string;
   currentUrl?: string;
   pagesScanned: number;
@@ -96,6 +96,9 @@ export interface Progress {
   failed: number;
   total: number;
   bytes: number;
+  elapsedMs?: number;
+  stage?: number;
+  stageTotal?: number;
 }
 
 export interface ScanInput {
@@ -116,12 +119,13 @@ export interface StoredCookie {
 
 export interface Job {
   id: string;
-  type: 'scan' | 'export';
+  type: 'scan' | 'export' | 'analyze' | 'blueprint';
   status: JobStatus;
   createdAt: string;
   updatedAt: string;
   progress: Progress;
   error?: string;
+  projectId?: string;
   scanInput?: Omit<ScanInput, 'testAllowHosts'>;
   result?: ScanResult;
   manifest?: ManifestFile;

@@ -5,8 +5,11 @@ import { dataDir, LIMITS } from '../config';
 import { scanSite } from '../browser/scanner';
 import { CancelledError } from '../browser/cancel';
 import { exportAssets } from '../download/pipeline';
+import { analyzeSite } from '../analyze/engine';
+import { writeBlueprint } from '../analyze/export';
 import { HttpError } from '../http/errors';
-import { emptyProgress, type Job, type ScanInput } from '../types';
+import { projects } from '../projects/store';
+import { emptyProgress, type Job, type ScanInput, type ScanResult } from '../types';
 
 interface Memory {
   jobs: Map<string, Job>;
@@ -143,7 +146,10 @@ export function startScan(input: ScanInput): Job {
       });
       memory.cookies.set(job.id, output.cookies);
       job.result = output.result;
-      if (job.status !== 'cancelled') setStatus(job, 'completed');
+      if (job.status !== 'cancelled') {
+        rememberScan(job, output.result);
+        setStatus(job, 'completed');
+      }
       job.progress = { ...job.progress, phase: 'done', message: job.status === 'cancelled' ? 'Cancelled' : `Discovered ${output.result.assets.length} assets`, assetsFound: output.result.assets.length };
     } catch (error) {
       if (error instanceof CancelledError || controller.signal.aborted || job.status === 'cancelled') {
@@ -275,4 +281,130 @@ export function verifyExport(token: string): { id: string } {
 
 export function exportFile(id: string): string {
   return join(root(), 'exports', `${id}.zip`);
+}
+
+function rememberScan(job: Job, result: ScanResult) {
+  try {
+    const store = projects();
+    const project = job.projectId ? store.get(job.projectId) : null;
+    const saved = project ?? store.create({ name: result.title || safeHost(result.pageUrl), url: result.pageUrl, title: result.title });
+    store.saveScan(saved.id, result, job.id);
+    job.projectId = saved.id;
+  } catch (error) {
+    job.progress = { ...job.progress, message: error instanceof Error ? error.message : 'Project save failed' };
+  }
+}
+
+function safeHost(value: string): string {
+  try {
+    return new URL(value).hostname;
+  } catch {
+    return 'Reference project';
+  }
+}
+
+export function startAnalyze(input: { url?: string; projectId?: string; testAllowHosts?: string[] }): Job {
+  load();
+  const store = projects();
+  const existing = input.projectId ? store.get(input.projectId) : null;
+  if (input.projectId && !existing) throw new HttpError(404, 'Unknown project');
+  const url = existing?.url || input.url;
+  if (!url) throw new HttpError(400, 'A project or URL is required');
+  const project = existing ?? store.create({ name: safeHost(url), url });
+  store.update(project.id, { analysisStatus: 'running', analysisJobId: undefined });
+  const now = new Date().toISOString();
+  const job: Job = {
+    id: randomUUID(),
+    type: 'analyze',
+    status: 'queued',
+    createdAt: now,
+    updatedAt: now,
+    projectId: project.id,
+    progress: { ...emptyProgress('Queued'), stage: 0, stageTotal: 9 },
+  };
+  memory.jobs.set(job.id, job);
+  persist(job, true);
+  store.update(project.id, { analysisJobId: job.id, analysisStatus: 'running' });
+  void enqueue(async () => {
+    const starting = job.status;
+    if (starting === 'cancelled') return;
+    const controller = new AbortController();
+    memory.aborts.set(job.id, controller);
+    setStatus(job, 'running');
+    touch(job);
+    persist(job, true);
+    try {
+      const scan = store.readScan(project.id);
+      const analysis = await analyzeSite({
+        url,
+        projectId: project.id,
+        projectDir: store.dir(project.id),
+        manifest: scan?.assets,
+        signal: controller.signal,
+        testAllowHosts: input.testAllowHosts,
+        onProgress: (progress) => {
+          if (job.status === 'cancelled') return;
+          job.progress = progress;
+          touch(job);
+          persist(job);
+        },
+      });
+      if (job.status === 'cancelled') return;
+      store.saveAnalysis(project.id, analysis);
+      setStatus(job, 'completed');
+      job.progress = { ...job.progress, phase: 'done', message: `Blueprint ready · ${analysis.sections.length} sections`, stage: 9, stageTotal: 9, assetsFound: analysis.assetMap.length };
+    } catch (error) {
+      const cancelled = error instanceof CancelledError || controller.signal.aborted || job.status === 'cancelled';
+      setStatus(job, cancelled ? 'cancelled' : 'failed');
+      job.error = cancelled ? 'Cancelled' : error instanceof Error ? error.message : 'Analysis failed';
+      store.update(project.id, { analysisStatus: cancelled ? 'none' : 'failed', warnings: [job.error] });
+    } finally {
+      memory.aborts.delete(job.id);
+      touch(job);
+      persist(job, true);
+    }
+  });
+  return job;
+}
+
+export function startBlueprint(projectId: string): Job {
+  load();
+  const store = projects();
+  const project = store.get(projectId);
+  if (!project) throw new HttpError(404, 'Unknown project');
+  const analysis = store.readAnalysis(project.id);
+  if (!analysis) throw new HttpError(404, 'Analyze the project before exporting a blueprint');
+  const now = new Date().toISOString();
+  const job: Job = {
+    id: randomUUID(),
+    type: 'blueprint',
+    status: 'queued',
+    createdAt: now,
+    updatedAt: now,
+    projectId: project.id,
+    progress: { ...emptyProgress('Preparing the blueprint'), total: 1 },
+  };
+  memory.jobs.set(job.id, job);
+  persist(job, true);
+  void enqueue(async () => {
+    if (job.status === 'cancelled') return;
+    setStatus(job, 'running');
+    const zipPath = join(root(), 'exports', `${job.id}.zip`);
+    try {
+      const outcome = await writeBlueprint(zipPath, store.dir(project.id), analysis);
+      if (outcome.errors.length) throw new Error(outcome.errors.join(' '));
+      const expiresAt = new Date(Date.now() + LIMITS.exportTtlMs).toISOString();
+      job.download = { token: signExport(job.id, Date.parse(expiresAt)), expiresAt, bytes: outcome.bytes, filename: 'reference-blueprint.zip' };
+      setStatus(job, 'completed');
+      job.progress = { ...job.progress, phase: 'done', message: 'Blueprint ready', completed: 1, total: 1, bytes: outcome.bytes };
+    } catch (error) {
+      setStatus(job, 'failed');
+      job.error = error instanceof Error ? error.message : 'Blueprint export failed';
+      rmSync(zipPath, { force: true });
+    } finally {
+      touch(job);
+      persist(job, true);
+    }
+  });
+  return job;
 }
