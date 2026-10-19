@@ -57,12 +57,13 @@ export default function LibraryPage() {
               <div>
                 <div className="text-lg font-semibold">{project.name}{project.demo ? ' · demo' : ''}</div>
                 <div className="text-xs text-muted">{project.url}</div>
-                <div className="mt-2 text-xs text-muted">Assets {project.assetScanStatus} · Analysis {project.analysisStatus} · Replacements {project.replacementStatus || 'none'} · {project.versions.length} version{project.versions.length === 1 ? '' : 's'}</div>
+                <div className="mt-2 text-xs text-muted">Assets {project.assetScanStatus} · Analysis {project.analysisStatus} · Replacements {project.replacementStatus || 'none'} · Identity {project.identityStatus || 'none'} · {project.versions.length} version{project.versions.length === 1 ? '' : 's'}</div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={withBase(project.demo ? '/analyze' : `/analyze?project=${project.id}`)}>Open</Link>
                 {!project.demo && <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={withBase(`/download?project=${project.id}`)}>Assets</Link>}
                 {!project.demo && <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={withBase(`/replace?project=${project.id}`)}>Replace</Link>}
+                {!project.demo && <Link className="rounded-lg border border-line px-3 py-2 text-sm" href={withBase(`/identity?project=${project.id}`)}>Identity</Link>}
                 {!project.demo && <button type="button" className="rounded-lg border border-line px-3 py-2 text-sm" onClick={() => void rename(project)}>Rename</button>}
                 {!project.demo && <button type="button" className="rounded-lg border border-line px-3 py-2 text-sm" onClick={() => void rerun(project)}>Rerun analysis</button>}
                 {!project.demo && pendingDelete !== project.id && <button type="button" className="rounded-lg border border-red-900 px-3 py-2 text-sm" onClick={() => setPendingDelete(project.id)}>Delete</button>}

@@ -11,6 +11,7 @@ const LINKS = [
   ['/download', 'Asset Downloader'],
   ['/analyze', 'Website Analyzer'],
   ['/replace', 'Replacement Studio'],
+  ['/identity', 'Identity Studio'],
   ['/library', 'Project Library'],
   ['/help', 'Help'],
 ];

@@ -126,6 +126,7 @@ export class ProjectStore {
       warnings: [],
       demo: false,
       replacementStatus: 'none',
+      identityStatus: 'none',
     };
     this.driver.insert(project);
     mkdirSync(this.dir(project.id), { recursive: true });

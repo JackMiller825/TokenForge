@@ -13,6 +13,10 @@ describe('documentation coverage', () => {
       expect(text).toMatch(/reference-blueprint\.zip|design-system\.json/);
       expect(text).toMatch(/Phase 3|Replacement Studio|replacement studio/);
       expect(text).toMatch(/tokenforge-replacement-package\.zip/);
+      expect(text).toMatch(/Phase 4|Identity Studio/);
+      expect(text).toMatch(/tokenforge-identity-package\.zip/);
+      expect(text).toMatch(/Coming Soon|coming-soon/);
+      expect(text).toMatch(/brand consistency|Brand consistency/i);
       expect(text).toMatch(/Demo mode/);
       expect(text).toMatch(/Known limitations/);
     }

@@ -152,6 +152,18 @@ Mark each reference asset Replace, Preserve, Omit, or Not applicable. Images and
 
 A screenshot overlay is a mockup. It is not a reconstructed page. One mascot upload does not recreate every pose or animation. Text inside a bitmap is recorded only when you mark it, except for an SVG that already contains a text element.
 
+## Phase 4 identity studio
+
+Open **Identity Studio** for a saved project. The reference title stays on the project. Token name, ticker, narrative, section copy, official links, SEO, and appearance are stored in `identity.json`, with manual snapshots in `identity/revisions/`. Autosave does not create a revision on each keystroke.
+
+Ethereum, Base, and BNB Chain use a 42-character `0x` address. Solana uses its base58 form. A custom network needs a name and an address without spaces. Contract status `coming-soon` cannot include an address. `unverified` and `configured` are not shown as deployed.
+
+Supply, taxes, liquidity, and ownership start as editing defaults. Liquidity and ownership evidence is `planned`, `pending-verification`, `verified`, or `not-applicable`. The preview qualifies anything that is not verified.
+
+Section ids come from the Phase 2 blueprint. Tone presets do not overwrite writing. Empty-field suggestions are templates. Official links can be Coming Soon. The app does not invent social URLs. The brand consistency report flags stale reference names, foreign contract addresses, and unverified token claims.
+
+`tokenforge-identity-package.zip` uses schema 4.0.0 and references Phase 3 approved asset ids instead of copying image binaries. `mapping/phase5-input.json` is the generator contract. Phase 5 readiness separates hard blockers from warnings. The generator itself is not included.
+
 ## GitHub Pages
 
 https://jackmiller825.github.io/TokenForge/ is the static frontend. It does not run Playwright. Connect it to a TokenForge server, or use Demo mode to inspect the sample blueprint. The sample is not an analysis of a live site.
@@ -167,7 +179,10 @@ https://jackmiller825.github.io/TokenForge/ is the static frontend. It does not 
 - Very large galleries are paged 24 at a time rather than virtualized.
 - Content-hash matches are recorded on `sameContentAs`. Both filenames are still saved when their paths differ.
 - Single-label hostnames are blocked. Real public sites use a dotted hostname.
-- GitHub Pages cannot capture screenshots, build a blueprint, or process uploaded images by itself.
+- GitHub Pages cannot capture screenshots, build a blueprint, process uploaded images, or save an identity profile by itself.
+- Identity suggestions are templates. They do not claim endorsements, partnerships, or returns.
+- Bitmap text is not rewritten. The brand report only lists assets you marked, plus SVG text TokenForge could see.
+- The identity preview is a content and blueprint overlay, not a generated site.
 - A fitted variant is a still frame. It does not invent a new pose or rebuild video motion.
 - Inferred section roles are not certain until you correct them.
 - Canvas drawing commands and original animation source are not recovered.

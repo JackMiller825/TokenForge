@@ -124,6 +124,7 @@ function Analyzer() {
         <button className="rounded-2xl bg-lime px-5 py-3 font-semibold text-ink" type="submit">Analyze website</button>
         {analysis && !analysis.demo && <button className="rounded-2xl border border-line px-5 py-3" type="button" onClick={() => void exportBlueprint()}>Export blueprint</button>}
         {project && !analysis?.demo && <a className="rounded-2xl border border-line px-5 py-3 text-center" href={withBase(`/replace?project=${project.id}`)}>Replacement studio</a>}
+        {project && !analysis?.demo && <a className="rounded-2xl border border-line px-5 py-3 text-center" href={withBase(`/identity?project=${project.id}`)}>Identity studio</a>}
       </form>
       {job && total > 0 && (
         <div className="mt-4 rounded-2xl border border-line bg-panel px-4 py-3" aria-live="polite">

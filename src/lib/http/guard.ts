@@ -4,7 +4,7 @@ import { HttpError } from './errors';
 
 const buckets = new Map<string, { tokens: number; updated: number }>();
 
-const RATES = { scan: 8, export: 8, analyze: 4, preview: 120, read: 180, upload: 40, derive: 20 } as const;
+const RATES = { scan: 8, export: 8, analyze: 4, preview: 120, read: 180, upload: 40, derive: 20, identity: 80 } as const;
 
 const DEFAULT_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000', 'https://jackmiller825.github.io'];
 

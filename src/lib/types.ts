@@ -119,7 +119,7 @@ export interface StoredCookie {
 
 export interface Job {
   id: string;
-  type: 'scan' | 'export' | 'analyze' | 'blueprint' | 'replacement';
+  type: 'scan' | 'export' | 'analyze' | 'blueprint' | 'replacement' | 'identity';
   status: JobStatus;
   createdAt: string;
   updatedAt: string;

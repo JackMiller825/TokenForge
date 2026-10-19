@@ -184,6 +184,7 @@ export interface ReferenceProject {
   warnings: string[];
   demo: boolean;
   replacementStatus?: 'none' | 'draft' | 'ready';
+  identityStatus?: 'none' | 'draft' | 'ready';
 }
 
 export interface RawSection {
